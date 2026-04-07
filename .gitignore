@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# Databases
+*.sqlite
+instance/
+
+# Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vscode/
+
+# Logs
+*.log
+error.txt
+
+# OS
+.DS_Store
+Thumbs.db

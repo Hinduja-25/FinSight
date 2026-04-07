@@ -1,0 +1,111 @@
+/* App.css - Updated for muted professional theme */
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.section-title {
+  font-size: 2.25rem;
+  margin-bottom: 40px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  color: #22223B;
+}
+
+.table-glass {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+}
+
+.table-glass th {
+  padding: 16px 20px;
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.table-glass td {
+  padding: 22px 20px;
+  background: white;
+  border-top: 1px solid rgba(210, 196, 180, 0.2);
+  border-bottom: 1px solid rgba(210, 196, 180, 0.2);
+  transition: all 0.2s ease;
+}
+
+.table-glass td:first-child {
+  border-left: 1px solid rgba(210, 196, 180, 0.2);
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+}
+
+.table-glass td:last-child {
+  border-right: 1px solid rgba(210, 196, 180, 0.2);
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.table-glass tr:hover td {
+  background: #F8F9FA;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.badge {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+
+.badge-pending {
+  background: #F3E3D044;
+  color: #9A8C98;
+  border: 1px solid rgba(210, 196, 180, 0.5);
+}
+
+.badge-cleared {
+  background: #81B29A22;
+  color: #81B29A;
+  border: 1px solid rgba(129, 178, 154, 0.3);
+}
+
+.btn-icon {
+  background: #FBFAF9;
+  border: 1px solid #D2C4B444;
+  color: #9A8C98;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+  background: #E07A5F11;
+  color: #E07A5F;
+  border-color: #E07A5F33;
+}
+
+input, select {
+  width: 100%;
+  padding: 14px 18px;
+  background: #FFFFFF !important;
+  border: 2px solid #EEE9E4;
+  border-radius: 12px;
+  color: #4A4E69;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+input:focus, select:focus {
+  border-color: #81A6C6;
+  box-shadow: 0 0 0 4px rgba(129, 166, 198, 0.1);
+}
