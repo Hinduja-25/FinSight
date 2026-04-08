@@ -46,6 +46,27 @@ def add_income(current_user):
         db.session.rollback()
         return jsonify({"message": "Failed to add income", "error": str(e)}), 400
 
+@transaction_bp.route('/api/income/<int:id>', methods=['PUT'])
+@token_required
+def update_income_status(current_user, id):
+    income = Income.query.filter_by(id=id, user_id=current_user.id).first()
+    if not income:
+        return jsonify({"message": "Income entry not found"}), 404
+    
+    data = request.json
+    try:
+        if 'status' in data:
+            income.status = data['status']
+            if data['status'] == 'received':
+                # Automatically reset expected_date when marked as received
+                income.expected_date = None
+        
+        db.session.commit()
+        return jsonify({"message": "Status updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Update failed", "error": str(e)}), 500
+
 @transaction_bp.route('/api/income/<int:id>', methods=['DELETE'])
 @token_required
 def delete_income(current_user, id):

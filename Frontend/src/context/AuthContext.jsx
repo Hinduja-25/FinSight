@@ -3,10 +3,16 @@ import React, { createContext, useState, useEffect } from 'react';
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(() => {
+    const saved = localStorage.getItem('token');
+    return (saved === 'null' || saved === 'undefined' || !saved) ? null : saved;
+  });
 
   useEffect(() => {
-    const syncToken = () => setToken(localStorage.getItem('token'));
+    const syncToken = () => {
+      const saved = localStorage.getItem('token');
+      setToken((saved === 'null' || saved === 'undefined' || !saved) ? null : saved);
+    };
     window.addEventListener('storage', syncToken);
     return () => window.removeEventListener('storage', syncToken);
   }, []);

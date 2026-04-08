@@ -16,29 +16,29 @@ const ProtectedRoute = ({ children }) => {
   return token ? children : <Navigate to="/login" replace />;
 };
 
-const AuthRoute = ({ children }) => {
-  const { token } = useContext(AuthContext);
-  return token ? <Navigate to="/dashboard" replace /> : children;
-};
-
 // Main App Content that uses the Router hooks
 const AppContent = () => {
   const { token } = useContext(AuthContext);
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
 
-  // --- 1. If not logged in and not on login/signup, redirect to login ---
+  // --- 1. If it's the root path, always go to login ---
+  if (location.pathname === '/') {
+    return <Navigate to="/login" replace />;
+  }
+
+  // --- 2. If not logged in and not on login/signup, redirect to login ---
   if (!token && !isAuthPage) {
     return <Navigate to="/login" replace />;
   }
 
-  // --- 2. If it's an Auth Page, just show the page content ---
-  if (isAuthPage || !token) {
+  // --- 3. If it's an Auth Page, show it directly (no auto-redirect to dashboard) ---
+  if (isAuthPage) {
     return (
       <div className="auth-page-container">
         <Routes>
-          <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
-          <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>

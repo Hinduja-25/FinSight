@@ -66,16 +66,27 @@ const Dashboard = () => {
         setRecentTransactions(combined.slice(0, 5));
 
         // --- Process Bar Data (Cash Flow) ---
-        setBarData(incomeRes.data.map(i => ({ date: i.date, income: i.amount, expense: 0 }))); // Simplified for display
         const last7Days = {};
         for (let i = 6; i >= 0; i--) {
           const d = new Date();
           d.setDate(d.getDate() - i);
-          const dateStr = d.toISOString().split('T')[0];
-          last7Days[dateStr] = { name: d.toLocaleDateString("en-US", { weekday: 'short' }), income: 0, expense: 0, fullDate: dateStr };
+          
+          // Use YYYY-MM-DD local format for keys
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const dateStr = `${year}-${month}-${day}`;
+          
+          last7Days[dateStr] = { 
+            name: d.toLocaleDateString("en-US", { weekday: 'short' }), 
+            income: 0, 
+            expense: 0, 
+            fullDate: dateStr 
+          };
         }
 
         Array.from([...incomes, ...expenses]).forEach(item => {
+          // item.date is already "YYYY-MM-DD" from API
           if (last7Days[item.date]) {
             if (item.type === 'Income' && item.status === 'received') last7Days[item.date].income += item.amount;
             if (item.type === 'Expense') last7Days[item.date].expense += item.amount;
