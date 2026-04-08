@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -19,6 +19,15 @@ def create_app():
 
     # 2. Initialization
     db.init_app(app)
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        # Log the error for Observability
+        app.logger.error(f"Err: {str(e)}")
+        # Return generic JSON for Interface Safety
+        code = 500
+        if hasattr(e, 'code'): code = e.code
+        return jsonify({"message": str(e), "status": "error"}), code
 
     with app.app_context():
         # 3. Register Blueprints

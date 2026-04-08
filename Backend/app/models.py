@@ -11,6 +11,8 @@ class User(db.Model):
     incomes = db.relationship('Income', backref='user', lazy=True)
     expenses = db.relationship('Expense', backref='user_ref', lazy=True) # Changed backref to avoid collision risk
 
+from sqlalchemy.orm import validates
+
 class Income(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -21,6 +23,12 @@ class Income(db.Model):
     expected_date = db.Column(db.Date, nullable=True)
     description = db.Column(db.String(255), nullable=True)
 
+    @validates('amount')
+    def validate_amount(self, key, amount):
+        if amount <= 0:
+            raise ValueError("Income amount must be positive.")
+        return amount
+
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -28,3 +36,9 @@ class Expense(db.Model):
     category = db.Column(db.String(100), nullable=False)
     date = db.Column(db.Date, nullable=False, default=datetime.utcnow) # FIXED: Use callable instead of value
     description = db.Column(db.String(255), nullable=True)
+
+    @validates('amount')
+    def validate_amount(self, key, amount):
+        if amount <= 0:
+            raise ValueError("Expense amount must be positive.")
+        return amount
