@@ -12,7 +12,37 @@ transaction_bp = Blueprint('transactions', __name__)
 @transaction_bp.route('/api/income', methods=['GET'])
 @token_required
 def get_incomes(current_user):
-    incomes = Income.query.filter_by(user_id=current_user.id).all()
+    timeframe = request.args.get('timeframe')
+    max_amount = request.args.get('max_amount', type=float)
+
+    query = Income.query.filter_by(user_id=current_user.id)
+
+    if timeframe in ['weekly', 'monthly', 'yearly']:
+        from datetime import datetime, timedelta
+        today = datetime.utcnow().date()
+        if timeframe == 'weekly':
+            start_date = today - timedelta(days=7)
+        elif timeframe == 'monthly':
+            start_date = today - timedelta(days=30)
+        elif timeframe == 'yearly':
+            start_date = today - timedelta(days=365)
+        query = query.filter(Income.date >= start_date)
+
+    if max_amount is not None:
+        query = query.filter(Income.amount <= max_amount)
+
+    sort_order = request.args.get('sort_order')
+    if sort_order == 'amount_asc':
+        query = query.order_by(Income.amount.asc())
+    elif sort_order == 'amount_desc':
+        query = query.order_by(Income.amount.desc())
+    elif sort_order == 'date_asc':
+        query = query.order_by(Income.date.asc())
+    elif sort_order == 'date_desc':
+        query = query.order_by(Income.date.desc())
+
+    incomes = query.all()
+
     result = [{
         'id': inc.id, 'amount': inc.amount, 'source': inc.source,
         'date': inc.date.strftime('%Y-%m-%d') if inc.date else None,
@@ -48,7 +78,7 @@ def add_income(current_user):
 
 @transaction_bp.route('/api/income/<int:id>', methods=['PUT'])
 @token_required
-def update_income_status(current_user, id):
+def update_income(current_user, id):
     income = Income.query.filter_by(id=id, user_id=current_user.id).first()
     if not income:
         return jsonify({"message": "Income entry not found"}), 404
@@ -58,11 +88,16 @@ def update_income_status(current_user, id):
         if 'status' in data:
             income.status = data['status']
             if data['status'] == 'received':
-                # Automatically reset expected_date when marked as received
                 income.expected_date = None
         
+        if 'amount' in data: income.amount = float(data['amount'])
+        if 'source' in data: income.source = data['source']
+        if 'description' in data: income.description = data['description']
+        if 'date' in data and data['date']: income.date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        if 'expected_date' in data and data['expected_date']: income.expected_date = datetime.strptime(data['expected_date'], '%Y-%m-%d').date()
+
         db.session.commit()
-        return jsonify({"message": "Status updated successfully"}), 200
+        return jsonify({"message": "Income updated successfully"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Update failed", "error": str(e)}), 500
@@ -85,7 +120,37 @@ def delete_income(current_user, id):
 @transaction_bp.route('/api/expenses', methods=['GET'])
 @token_required
 def get_expenses(current_user):
-    expenses = Expense.query.filter_by(user_id=current_user.id).all()
+    timeframe = request.args.get('timeframe')
+    max_amount = request.args.get('max_amount', type=float)
+
+    query = Expense.query.filter_by(user_id=current_user.id)
+
+    if timeframe in ['weekly', 'monthly', 'yearly']:
+        from datetime import datetime, timedelta
+        today = datetime.utcnow().date()
+        if timeframe == 'weekly':
+            start_date = today - timedelta(days=7)
+        elif timeframe == 'monthly':
+            start_date = today - timedelta(days=30)
+        elif timeframe == 'yearly':
+            start_date = today - timedelta(days=365)
+        query = query.filter(Expense.date >= start_date)
+
+    if max_amount is not None:
+        query = query.filter(Expense.amount <= max_amount)
+
+    sort_order = request.args.get('sort_order')
+    if sort_order == 'amount_asc':
+        query = query.order_by(Expense.amount.asc())
+    elif sort_order == 'amount_desc':
+        query = query.order_by(Expense.amount.desc())
+    elif sort_order == 'date_asc':
+        query = query.order_by(Expense.date.asc())
+    elif sort_order == 'date_desc':
+        query = query.order_by(Expense.date.desc())
+
+    expenses = query.all()
+
     result = [{
         'id': exp.id, 'amount': exp.amount, 'category': exp.category,
         'date': exp.date.strftime('%Y-%m-%d') if exp.date else None,
@@ -128,6 +193,26 @@ def delete_expense(current_user, id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Internal failure", "error": str(e)}), 500
+
+@transaction_bp.route('/api/expenses/<int:id>', methods=['PUT'])
+@token_required
+def update_expense(current_user, id):
+    expense = Expense.query.filter_by(id=id, user_id=current_user.id).first()
+    if not expense:
+        return jsonify({"message": "Expense not found"}), 404
+        
+    data = request.json
+    try:
+        if 'amount' in data: expense.amount = float(data['amount'])
+        if 'category' in data: expense.category = data['category']
+        if 'description' in data: expense.description = data['description']
+        if 'date' in data and data['date']: expense.date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        
+        db.session.commit()
+        return jsonify({"message": "Expense updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Update failed", "error": str(e)}), 400
 
 # --- 3. Analytics & Export ---
 @transaction_bp.route('/api/analytics', methods=['GET'])
