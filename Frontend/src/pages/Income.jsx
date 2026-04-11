@@ -1,42 +1,79 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Plus, Trash2, Download } from 'lucide-react';
+import { TrendingUp, Plus, Trash2, Download, Edit2, X } from 'lucide-react';
 import axios from 'axios';
 
 const Income = () => {
   const [incomes, setIncomes] = useState([]);
   const [formData, setFormData] = useState({ amount: '', source: '', date: '', description: '', expected_date: '', status: 'received' });
+  const [timeframe, setTimeframe] = useState('all');
+  const [maxAmount, setMaxAmount] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [sortOrder, setSortOrder] = useState('date_desc');
 
   // Fetch from Flask Backend
-  useEffect(() => {
-    const fetchIncomes = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/income', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setIncomes(res.data);
-      } catch (err) {
-        console.error('Error fetching incomes:', err);
+  const fetchIncomes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      let url = '/api/income?';
+      if (timeframe !== 'all') {
+        url += `timeframe=${timeframe}&`;
       }
-    };
-    fetchIncomes();
-  }, []);
+      if (maxAmount) {
+        url += `max_amount=${maxAmount}&`;
+      }
+      url += `sort_order=${sortOrder}`;
+      const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIncomes(res.data);
+    } catch (err) {
+      console.error('Error fetching incomes:', err);
+    }
+  };
 
-  const handleAdd = async (e) => {
+  useEffect(() => {
+    fetchIncomes();
+  }, [timeframe, maxAmount, sortOrder]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.amount || !formData.source) return;
     
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('/api/income', formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      setIncomes([...incomes, { ...formData, id: res.data.id, amount: parseFloat(formData.amount) }]);
+      if (editingId) {
+        await axios.put(`/api/income/${editingId}`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setIncomes(incomes.map(inc => inc.id === editingId ? { ...inc, ...formData, amount: parseFloat(formData.amount) } : inc));
+        setEditingId(null);
+      } else {
+        const res = await axios.post('/api/income', formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setIncomes([...incomes, { ...formData, id: res.data.id, amount: parseFloat(formData.amount) }]);
+      }
       setFormData({ amount: '', source: '', date: '', description: '', expected_date: '', status: 'received' });
     } catch (err) {
-      console.error('Error adding income', err);
+      console.error('Error saving income', err);
     }
+  };
+
+  const handleEditClick = (inc) => {
+    setFormData({ 
+      amount: inc.amount, 
+      source: inc.source, 
+      date: inc.date || '', 
+      description: inc.description || '', 
+      expected_date: inc.expected_date || '', 
+      status: inc.status 
+    });
+    setEditingId(inc.id);
+  };
+
+  const handleCancelEdit = () => {
+    setFormData({ amount: '', source: '', date: '', description: '', expected_date: '', status: 'received' });
+    setEditingId(null);
   };
 
   const markAsReceived = async (id) => {
@@ -74,8 +111,8 @@ const Income = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '40px' }}>
         <div className="premium-card shadow-lg" style={{ height: 'fit-content' }}>
-          <h3 style={{ marginBottom: '32px', color: '#22223B' }}>New Transaction</h3>
-          <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <h3 style={{ marginBottom: '32px', color: '#22223B' }}>{editingId ? 'Edit Transaction' : 'New Transaction'}</h3>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>Amount (₹)</label>
               <input 
@@ -131,24 +168,61 @@ const Income = () => {
                 />
               </div>
             )}
-            <button type="submit" className="btn-primary" style={{ marginTop: '12px', width: '100%', justifyContent: 'center' }}>
-              <Plus size={20} />
-              Log Income
-            </button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                {editingId ? <Edit2 size={20} /> : <Plus size={20} />}
+                {editingId ? 'Update Income' : 'Log Income'}
+              </button>
+              {editingId && (
+                <button type="button" onClick={handleCancelEdit} style={{ background: '#f5f5f5', borderRadius: '12px', padding: '0 16px', display: 'flex', alignItems: 'center' }}>
+                  <X size={20} color="#666" />
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
         <div className="premium-card shadow-sm">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Income Logs</h3>
-            <button className="btn-icon" title="Export to Excel" onClick={() => {
-                const token = localStorage.getItem('token');
-                window.open(`http://127.0.0.1:5000/api/export?token=${token}`);
-            }}>
-              <Download size={22} />
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <select 
+                value={sortOrder} 
+                onChange={e => setSortOrder(e.target.value)}
+                style={{ padding: '8px', borderRadius: '10px', border: '1px solid #E0E0E0', fontSize: '0.9rem' }}
+              >
+                <option value="date_desc">Newest to Oldest</option>
+                <option value="date_asc">Oldest to Newest</option>
+                <option value="amount_desc">Highest to Lowest</option>
+                <option value="amount_asc">Lowest to Highest</option>
+              </select>
+              <select 
+                value={timeframe} 
+                onChange={e => setTimeframe(e.target.value)}
+                style={{ padding: '8px', borderRadius: '10px', border: '1px solid #E0E0E0', fontSize: '0.9rem' }}
+              >
+                <option value="all">No filter</option>
+                <option value="weekly">Last 7 Days</option>
+                <option value="monthly">Last 30 Days</option>
+                <option value="yearly">Last 365 Days</option>
+              </select>
+              <input 
+                type="number" 
+                placeholder="Max Amount"
+                value={maxAmount}
+                onChange={e => setMaxAmount(e.target.value)}
+                style={{ padding: '8px', borderRadius: '10px', border: '1px solid #E0E0E0', width: '120px', fontSize: '0.9rem' }}
+              />
+              <button className="btn-icon" title="Export to Excel" onClick={() => {
+                  const token = localStorage.getItem('token');
+                  window.open(`http://127.0.0.1:5000/api/export?token=${token}`);
+              }}>
+                <Download size={22} />
+              </button>
+            </div>
           </div>
-          <table className="table-glass">
+          <div style={{ overflowY: 'auto', maxHeight: '500px' }}>
+            <table className="table-glass">
             <thead>
               <tr>
                 <th>Source</th>
@@ -193,6 +267,9 @@ const Income = () => {
                           <TrendingUp size={16} />
                         </button>
                       )}
+                      <button className="btn-icon" onClick={() => handleEditClick(inc)}>
+                        <Edit2 size={16} />
+                      </button>
                       <button className="btn-icon" onClick={() => handleDelete(inc.id)}>
                         <Trash2 size={16} />
                       </button>
@@ -202,6 +279,7 @@ const Income = () => {
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
     </div>
