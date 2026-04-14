@@ -19,6 +19,14 @@ def create_app():
 
     # 2. Initialization
     db.init_app(app)
+    
+    @app.route('/')
+    def index():
+        return jsonify({
+            "message": "FinSight API is live and healthy",
+            "status": "success",
+            "version": "1.0.0"
+        })
 
     @app.errorhandler(Exception)
     def handle_exception(e):
